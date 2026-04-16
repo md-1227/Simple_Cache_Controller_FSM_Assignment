@@ -286,9 +286,9 @@ class CacheController:
 def main():
     print(textwrap.dedent("""\
     ╔══════════════════════════════════════════════════════════╗
-    ║        Cache Controller FSM Simulation                  ║
-    ║  Block=16 B | Cache=16 KB (1024 blocks) | Addr=32-bit   ║
-    ║  Memory latency = 3 cycles                              ║
+    ║        Cache Controller FSM Simulation                   ║
+    ║  Block=16 B | Cache=16 KB (1024 blocks) | Addr=32-bit    ║
+    ║  Memory latency = 3 cycles                               ║
     ╚══════════════════════════════════════════════════════════╝
     """))
 
@@ -296,19 +296,17 @@ def main():
     ctrl  = CacheController(mem)
 
     # Pre-populate memory with recognisable data so reads return non-zero values
-    # Block at address 0x0000_0000  (index=0, tag=0)
-    mem.store[0x00000000] = [0xA0, 0xA1, 0xA2, 0xA3]
-    # Block at address 0x0000_0010  (index=1, tag=0)
-    mem.store[0x00000010] = [0xB0, 0xB1, 0xB2, 0xB3]
-    # Block that shares index=0 but different tag (tag=1 → addr 0x0010_0000)
-    mem.store[0x00100000] = [0xC0, 0xC1, 0xC2, 0xC3]
+    
+    mem.store[0x00000000] = [0xA0, 0xA1, 0xA2, 0xA3] # Block at address 0x0000_0000  (index=0, tag=0)
+    mem.store[0x00000010] = [0xB0, 0xB1, 0xB2, 0xB3] # Block at address 0x0000_0010  (index=1, tag=0)
+    mem.store[0x00100000] = [0xC0, 0xC1, 0xC2, 0xC3] # Block at address 0x0010_0000  (index=0, tag=1)
 
     # ── Request sequence ──────────────────────────────────────────────────
     # Addr breakdown reminder:
     #   0x00000000 → tag=0,   index=0,  offset=0
     #   0x00000004 → tag=0,   index=0,  offset=1
     #   0x00000010 → tag=0,   index=1,  offset=0
-    #   0x00100000 → tag=1,   index=0,  offset=0  (conflicts with index 0)
+    #   0x00100000 → tag=1,   index=0,  offset=0
     requests = [
         # 1. Cold miss – clean eviction, read block into index 0
         CPURequest("READ",  0x00000000),
@@ -325,9 +323,6 @@ def main():
         # 7. Read same word back – should hit and return 0x42
         CPURequest("READ",  0x00100000),
     ]
-
-    print("Scenario: 7 requests demonstrating cold miss, hit, write-hit,")
-    print("          conflict miss with write-back, and post-write read-back.\n")
 
     summary = []
     for i, req in enumerate(requests, 1):
